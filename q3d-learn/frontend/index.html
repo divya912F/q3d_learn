@@ -1,0 +1,86 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Q-3D Learn — Your visual study desk</title>
+  <meta name="description" content="Learn Quantum Computing, Machine Learning, Data Science and AI with visual labs, real simulations, quizzes and an AI tutor." />
+  <meta name="theme-color" content="#f8f4ea" />
+  <link rel="icon" href="assets/favicon.svg" type="image/svg+xml" />
+  <link rel="manifest" href="manifest.webmanifest" />
+  <link rel="apple-touch-icon" href="assets/icon-192.png" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <script>
+    // apply the saved theme before first paint
+    try {
+      const s = JSON.parse(localStorage.getItem('q3d-learn:v1') || '{}');
+      const t = s.theme || (matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light');
+      document.documentElement.dataset.theme = t;
+      const p = JSON.parse(localStorage.getItem('q3d-prefs:v1') || '{}');
+      if (p.size) document.documentElement.dataset.size = p.size;
+      if (p.motion) document.documentElement.dataset.motion = p.motion;
+    } catch (e) { document.documentElement.dataset.theme = 'light'; }
+  </script>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,600;9..144,700&family=Caveat:wght@600;700&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.css" />
+  <link rel="stylesheet" href="css/main.css" />
+  <script type="importmap">
+    {
+      "imports": {
+        "three": "./vendor/three/three.module.min.js",
+        "three/addons/": "./vendor/three/addons/"
+      }
+    }
+  </script>
+</head>
+<body>
+  <aside class="sidebar" id="sidebar">
+    <a class="brand" href="#/">
+      <span class="brand-mark" aria-hidden="true">
+        <svg viewBox="0 0 32 32"><circle cx="16" cy="16" r="11" fill="none" stroke="currentColor" stroke-width="2.2"/><ellipse cx="16" cy="16" rx="11" ry="4" fill="none" stroke="currentColor" stroke-width="1.4" opacity=".7"/><line x1="16" y1="16" x2="23" y2="9" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"/><circle cx="23" cy="9" r="2.6" fill="currentColor"/></svg>
+      </span>
+      <span><span class="brand-text">Q-3D <b>Learn</b></span><small>your visual study desk</small></span>
+    </a>
+    <nav class="nav" id="nav" aria-label="Main"></nav>
+    <div class="sidebar-foot">
+      <div class="status-pill" id="status-pill" title="Backend status"><span class="dot"></span><span id="status-text">Connecting…</span></div>
+      <div class="row" style="gap:6px;flex-wrap:nowrap">
+        <button class="icon-btn" id="settings-btn" title="Study settings" aria-label="Settings"><i data-icon="gear"></i></button>
+        <button class="icon-btn" id="theme-btn" title="Switch light / dark" aria-label="Toggle theme"><i data-icon="moon"></i></button>
+      </div>
+    </div>
+  </aside>
+
+  <div class="main">
+    <header class="topbar">
+      <button class="icon-btn menu-btn" id="menu-btn" aria-label="Open menu"><i data-icon="menu"></i></button>
+      <h1 class="page-title" id="page-title">Q-3D Learn</h1>
+      <div class="topbar-actions">
+        <button class="search-btn" id="search-btn" aria-label="Search (Ctrl+K)"><i data-icon="search"></i><span>Search</span><span class="kbd">Ctrl K</span></button>
+        <button class="sky-chip" id="sky-chip" aria-label="Living sky and ambient sound"></button>
+        <button class="icon-btn" id="focus-btn" title="Focus timer (F)" aria-label="Focus timer"><i data-icon="clock"></i></button>
+        <button class="btn btn-ghost btn-sm ask-btn" id="open-drawer"><i data-icon="bot"></i><span>Ask Q-Bot</span></button>
+        <button class="user-chip" id="user-chip" aria-label="Profile"></button>
+      </div>
+    </header>
+    <main id="view" class="view" tabindex="-1"></main>
+  </div>
+
+  <aside class="drawer" id="drawer" aria-hidden="true">
+    <div class="drawer-head">
+      <div><b>Q-Bot</b><small id="drawer-provider">your study buddy</small></div>
+      <button class="icon-btn" id="close-drawer" aria-label="Close"><i data-icon="x"></i></button>
+    </div>
+    <div class="drawer-body" id="drawer-chat"></div>
+  </aside>
+  <div class="scrim" id="scrim"></div>
+
+  <div class="modal" id="modal" role="dialog" aria-modal="true" hidden></div>
+  <div class="toasts" id="toasts" aria-live="polite"></div>
+
+  <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.js"></script>
+  <script type="module" src="js/main.js"></script>
+</body>
+</html>

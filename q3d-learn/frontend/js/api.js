@@ -1,0 +1,105 @@
+// Thin wrapper around the FastAPI backend.
+const BASE = window.Q3D_API_BASE || '';
+
+async function request(method, path, body) {
+  const res = await fetch(BASE + path, {
+    method,
+    headers: body ? { 'Content-Type': 'application/json' } : undefined,
+    body: body ? JSON.stringify(body) : undefined,
+  });
+  let data = null;
+  try { data = await res.json(); } catch { /* empty body */ }
+  if (!res.ok) {
+    const detail = data?.detail;
+    let msg = `Request failed (${res.status})`;
+    if (typeof detail === 'string') msg = detail;
+    else if (detail?.issues) msg = detail.issues.join(' ');
+    else if (Array.isArray(detail)) msg = detail.map((d) => d.msg).join('; ');
+    const err = new Error(msg);
+    err.status = res.status;
+    err.detail = detail;
+    throw err;
+  }
+  return data;
+}
+
+export const api = {
+  get: (p) => request('GET', p),
+  post: (p, b) => request('POST', p, b || {}),
+  del: (p) => request('DELETE', p),
+
+  system: () => request('GET', '/api/system'),
+  gates: () => request('GET', '/api/gates'),
+  simulate: (circuit, opts = {}) => request('POST', '/api/simulate', { ...circuit, ...opts }),
+  labState: (circuit) => request('POST', '/api/lab/state', circuit),
+  exportQasm: (circuit) => request('POST', '/api/qasm/export', circuit),
+  importQasm: (qasm) => request('POST', '/api/qasm/import', { qasm }),
+  algorithms: () => request('GET', '/api/algorithms'),
+  algorithm: (id) => request('GET', `/api/algorithms/${id}`),
+
+  courses: () => request('GET', '/api/courses'),
+  course: (cid) => request('GET', `/api/courses/${cid}`),
+  lessons: (cid) => request('GET', `/api/courses/${cid}/lessons`),
+  lesson: (cid, id) => request('GET', `/api/courses/${cid}/lessons/${id}`),
+  submitQuiz: (cid, id, answers, user_id) => request('POST', `/api/courses/${cid}/lessons/${id}/quiz`, { answers, user_id }),
+  challenges: (cid) => request('GET', `/api/courses/${cid}/challenges`),
+  checkChallenge: (cid, id, payload, user_id) => request('POST', `/api/courses/${cid}/challenges/${id}/check`, { ...payload, user_id }),
+
+  lab: (path, config, user_id) => request('POST', `/api/${path}`, { config, user_id }),
+
+  progress: (uid, course) => request('GET', `/api/progress/${uid}${course ? `?course=${course}` : ''}`),
+  saveCircuit: (body) => request('POST', '/api/circuits', body),
+  circuits: (uid) => request('GET', `/api/circuits/user/${uid}`),
+  deleteCircuit: (id, uid) => request('DELETE', `/api/circuits/${id}?user_id=${uid}`),
+
+  createUser: (body) => request('POST', '/api/users', body),
+  getUser: (id) => request('GET', `/api/users/${id}`),
+  joinClass: (uid, code) => request('POST', `/api/users/${uid}/join/${encodeURIComponent(code)}`),
+  ask: (body) => request('POST', '/api/tutor/ask', body),
+
+  createClassroom: (name, instructor_id) => request('POST', '/api/classrooms', { name, instructor_id }),
+  myClassrooms: (uid) => request('GET', `/api/classrooms/instructor/${uid}`),
+  demoClassroom: (uid) => request('POST', `/api/classrooms/demo${uid ? `?instructor_id=${uid}` : ''}`),
+  overview: (code, course = 'all') => request('GET', `/api/classrooms/${encodeURIComponent(code)}/overview?course=${course}`),
+  addAssignment: (code, body) => request('POST', `/api/classrooms/${encodeURIComponent(code)}/assignments`, body),
+  materials: (code) => request('GET', `/api/classrooms/${encodeURIComponent(code)}/materials`),
+  addMaterial: (code, body) => request('POST', `/api/classrooms/${encodeURIComponent(code)}/materials`, body),
+  deleteMaterial: (code, id, instructor_id) => request('DELETE', `/api/classrooms/${encodeURIComponent(code)}/materials/${id}?instructor_id=${instructor_id}`),
+
+  // study tools
+  glossary: (course) => request('GET', `/api/glossary${course ? `?course=${course}` : ''}`),
+  deck: (course) => request('GET', `/api/review/deck${course ? `?course=${course}` : ''}`),
+  dueCards: (uid, course, limit = 20) => request('GET', `/api/review/${uid}/due?limit=${limit}${course ? `&course=${course}` : ''}`),
+  gradeCard: (uid, card_id, grade) => request('POST', `/api/review/${uid}/grade`, { card_id, grade }),
+  reviewStats: (uid, course) => request('GET', `/api/review/${uid}/stats${course ? `?course=${course}` : ''}`),
+  memoryMap: (uid) => request('GET', `/api/review/${uid}/memory`),
+  logFocus: (body) => request('POST', '/api/focus', body),
+  focus: (uid) => request('GET', `/api/focus/${uid}`),
+  notes: (uid) => request('GET', `/api/notes/${uid}`),
+  note: (uid, lessonId) => request('GET', `/api/notes/${uid}/${encodeURIComponent(lessonId)}`),
+  saveNote: (uid, lessonId, text) => request('PUT', `/api/notes/${uid}/${encodeURIComponent(lessonId)}`, { text }),
+  certificate: (uid, course) => request('GET', `/api/certificate/${uid}/${course}`),
+  verifyCertificate: (code) => request('GET', `/api/certificates/verify/${encodeURIComponent(code)}`),
+
+  // ---- finale (v2.4): leaderboards, chat, practice, projects, tests, authoring, institutions
+  leaderboard: (course = 'all') => request('GET', `/api/leaderboard/${course}`),
+  chat: (code, after = 0) => request('GET', `/api/classrooms/${encodeURIComponent(code)}/chat?after=${after}`),
+  sendChat: (code, body) => request('POST', `/api/classrooms/${encodeURIComponent(code)}/chat`, body),
+  leetcode: (course, uid) => request('GET', `/api/leetcode/${course}${uid ? `?user_id=${uid}` : ''}`),
+  solvePractice: (body) => request('POST', '/api/leetcode/solve', body),
+  projects: (course, uid) => request('GET', `/api/projects/${course}${uid ? `?user_id=${uid}` : ''}`),
+  submitProject: (pid, body) => request('POST', `/api/projects/${encodeURIComponent(pid)}/submit`, body),
+  projectSubmissions: (pid) => request('GET', `/api/projects/${encodeURIComponent(pid)}/submissions`),
+  tests: (params = '') => request('GET', `/api/tests${params}`),
+  test: (tid) => request('GET', `/api/tests/${tid}`),
+  createTest: (body) => request('POST', '/api/tests', body),
+  submitTest: (tid, body) => request('POST', `/api/tests/${tid}/submit`, body),
+  testResults: (tid) => request('GET', `/api/tests/${tid}/results`),
+  authoredCourses: (iid) => request('GET', `/api/authoring/courses${iid ? `?instructor_id=${iid}` : ''}`),
+  authoredCourse: (cid) => request('GET', `/api/authoring/courses/${cid}`),
+  createAuthoredCourse: (body) => request('POST', '/api/authoring/courses', body),
+  addAuthoredLesson: (cid, body) => request('POST', `/api/authoring/courses/${cid}/lessons`, body),
+  createInstitution: (body) => request('POST', '/api/institutions', body),
+  ssoLogin: (body) => request('POST', '/api/institutions/sso', body),
+  institution: (code) => request('GET', `/api/institutions/${encodeURIComponent(code)}`),
+};
